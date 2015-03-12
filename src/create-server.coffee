@@ -107,10 +107,14 @@ class UDPHoleService
       # existing service, broadcast to hosts connection
       service.addHost(data.private, publicInfo)
     else
-      # non existing service, send error
-      @send(publicInfo, "connect", 404, {
-        message: "Service not found"
-      })
+      # check swarm connection to swarm only
+      if data.service.type is "swarm"
+        @service(data.service.name, data.service.type).addHost(data.private, publicInfo)
+      else
+        # non existing service, send error
+        @send(publicInfo, "connect", 404, {
+          message: "Service not found"
+        })
 
   service: (name, type = "single") =>
     @services[name] = @services[name] || @createService(name, type)

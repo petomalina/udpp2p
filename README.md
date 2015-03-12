@@ -51,7 +51,7 @@ client.on "data", (publicInfo, data) ->
 client.start()
 ```
 
-Since host it not enough and you can't have more hosts centric topology, you will need clients:
+Since host is not enough and you can't have more hosts centric topology, you will need clients:
 ```coffee
 client = require("../udpp2p").createClient({
   port: 1338
@@ -67,7 +67,7 @@ client = require("../udpp2p").createClient({
 client.start()
 ```
 
-### Swarm topology ( everyone to everyone)
+### Swarm topology ( everyone to everyone )
 
 In this topology, every client is connected to every client. Because of that, all you need is clients.
 

@@ -1,6 +1,6 @@
 {
   "name": "udpp2p",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "UDP Hole punching service",
   "main": "index.js",
   "dependencies": {

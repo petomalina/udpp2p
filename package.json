@@ -1,0 +1,30 @@
+{
+  "name": "udpp2p",
+  "version": "1.0.0",
+  "description": "UDP Hole punching service",
+  "main": "index.js",
+  "dependencies": {
+    "network": "^0.1.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Gelidus/udpp2p.git"
+  },
+  "keywords": [
+    "udp",
+    "p2p",
+    "peer",
+    "to",
+    "peer"
+  ],
+  "author": "Gelidus",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Gelidus/udpp2p/issues"
+  },
+  "homepage": "https://github.com/Gelidus/udpp2p"
+}

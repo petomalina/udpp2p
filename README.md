@@ -53,7 +53,7 @@ client.start()
 
 Since host is not enough and you can't have more hosts centric topology, you will need clients:
 ```coffee
-client = require("../udpp2p").createClient({
+client = require("udpp2p").createClient({
   port: 1338
   host: "127.0.0.1"
   service: {
@@ -80,7 +80,7 @@ client1 ------ client2
 
 Example client:
 ```coffee
-client = require("../udpp2p").createClient({
+client = require("udpp2p").createClient({
   port: 1338
   host: "127.0.0.1"
   service: {

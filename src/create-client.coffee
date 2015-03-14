@@ -3,6 +3,22 @@ TCP = require("net")
 Network = require("network")
 EventEmitter = require("events").EventEmitter
 
+class Peer extends EventEmitter
+  constructor: (@host) ->
+    @ack = {
+      requests: 0 # sent requests
+      acked: false # not connected
+    }
+
+  sendToHost: (data, done) =>
+    data = new Buffer(JSON.stringify(data))
+
+    @socket.send data, 0, data.length, @host.private.port, @host.private.address, (err, bytes) ->
+      if err?
+        socket.close()
+      else
+        callback() if callback?
+
 class UDPHoleClient extends EventEmitter
   constructor: (options) ->
     options.port = options.port || 1338
@@ -36,9 +52,8 @@ class UDPHoleClient extends EventEmitter
       # new connection was received, add it to hosts
       if data.request is "connect"
         for host in data.hosts # push newly connected host
-          @hosts.push(host) 
+          @hosts.push(host)
 
-          # send acknowledgment to new connection
           @sendToHost host.private, {
             request: "ack"
             status: 200

@@ -76,7 +76,7 @@ class UDPHoleClient extends EventEmitter
         return @emit("fail", data.request, data.status, data.message)
 
       if data.request is "heartbeat"
-        return @sendToHost(publicInfo, encodedData)
+        return @sendToHost(publicInfo, data)
 
       # new connection was received, add it to hosts
       if data.request is "connect"

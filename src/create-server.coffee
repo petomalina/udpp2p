@@ -18,6 +18,10 @@ class Service
     # { private: {}, public: {} }
     @hosts = []
 
+    @heartbeatInterval = setInterval () =>
+      @broadcastHosts "heartbeat", 200, {}
+    , 2500
+
   addHost: (privateInfo, publicInfo) =>
     @broadcastHosts("connect", 200, {
       hosts: [{

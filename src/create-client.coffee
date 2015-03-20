@@ -33,6 +33,8 @@ class Peer extends EventEmitter
         @emit("connect", @)
 
       @ack.requests = 0 #reset ack
+    else
+      @emit("data", @, data)
 
   send: (data, done) =>
     data = new Buffer(JSON.stringify(data))
@@ -67,11 +69,14 @@ class UDPHoleClient extends EventEmitter
       catch e
         return console.log("Cannot parse given data #{e}: #{data}")
 
-      if data.request not in ["connect", "register", "ack", "bye"]
-        return @emit("data", @getPeer(publicInfo), data)
+      if data.request not in ["connect", "register", "heartbeat", "bye"]
+        return @getPeer(publicInfo).receive(data)
 
       if data.status isnt 200
         return @emit("fail", data.request, data.status, data.message)
+
+      if data.request is "heartbeat"
+        return @sendToHost(publicInfo, encodedData)
 
       # new connection was received, add it to hosts
       if data.request is "connect"
@@ -88,11 +93,11 @@ class UDPHoleClient extends EventEmitter
           peer.on "connect", (peer) =>
             @emit("connect", peer)
 
+          peer.on "data", (peer, data) =>
+            @emit("data", peer, data)
+
       if data.request is "register" and data.status is 200
         console.log "Registration of service \'#{@service.name}\' successful"
-
-      if data.request is "ack"
-        @getPeer(publicInfo).receive(data)
 
     @socket.on "listening", () =>
       request = {

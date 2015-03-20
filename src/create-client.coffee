@@ -24,7 +24,8 @@ class Peer extends EventEmitter
 
     if @ack.requests > 10 # lost connection
       clearInterval(@ackInterval)
-      @emit("disconnect", @)
+      if @ack.acked
+        @emit("disconnect", @)
 
   receive: (data) =>
     if data.request is "ack"

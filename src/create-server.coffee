@@ -19,8 +19,17 @@ class Service
     @hosts = []
 
     @heartbeatInterval = setInterval () =>
-      @broadcastHosts "heartbeat", 200, {}
-    , 2500
+      for connection in @hosts
+        host = connection.private # get private data from host
+        @send(host, "heartbeat", 200, { service: @name })
+        connection.heartbeat++
+    , 1000
+
+    @heartbeatResetInterval = setInterval () =>
+      for connection in @hosts
+        if connection.heartbeat > 2
+          @hosts.splice(@hosts.indexOf(connection), 1)
+          console.dir "disconnected"
 
   addHost: (privateInfo, publicInfo) =>
     @broadcastHosts("connect", 200, {
@@ -36,13 +45,19 @@ class Service
 
     # add new host only if swarm or none in single service
     if (@type is "single" and @hosts.length is 0) or (@type is "swarm") 
-      @hosts.push({ private: privateInfo, public: publicInfo})
+      @hosts.push({ private: privateInfo, public: publicInfo, heartbeat: 0})
       console.log "Host added to service \'#{@name}\'"
 
   broadcastHosts: (request, status, data, done) =>
     for connection in @hosts
       host = connection.private # get private data from host
       @send(host, request, status, data, done)
+
+  receive: (publicInfo, data) =>
+    for connection in @hosts
+      if connection.private.port is publicInfo.port and connection.private.address is publicInfo.address
+        connection.heartbeat = 0 # reset heartbeat
+        break
 
   send: (host, request, status, data, done) ->
     # join status and request into the data block
@@ -75,6 +90,7 @@ class UDPHoleService
 
       @handleServiceRegistration(data, publicInfo) if data.request is "register"
       @handleServiceConnection(data, publicInfo) if data.request is "connect"
+      @handleServiceHeartbeat(data, publicInfo) if data.request is "heartbeat"
 
   validateMessage: (json) ->
     if not json?
@@ -119,6 +135,11 @@ class UDPHoleService
         @send(publicInfo, "connect", 404, {
           message: "Service not found"
         })
+
+  handleServiceHeartbeat: (data, publicInfo) =>
+    service =  @services[data.service]
+    if service? # delegate data
+      service.receive(publicInfo, data)
 
   service: (name, type = "single") =>
     @services[name] = @services[name] || @createService(name, type)

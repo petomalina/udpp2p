@@ -4,17 +4,35 @@ Network = require("network")
 EventEmitter = require("events").EventEmitter
 
 class Peer extends EventEmitter
-  constructor: (@host) ->
+  constructor: (@host, @socket) ->
     @ack = {
       requests: 0 # sent requests
       acked: false # not connected
     }
 
+    @ackInterval = null
+
   initialize: () ->
+    @ackInterval = setInterval(@connectionHandler, 250)
+
+  connectionHandler: () =>
     @send({
       request: "ack"
       status: 200
     })
+    @ack.requests++
+
+    if @ack.requests > 10 # lost connection
+      clearInterval(@ackInterval)
+      @emit("disconnect", @)
+
+  receive: (data) =>
+    if data.request is "ack"
+      if not @ack.acked
+        @ack.acked = true
+        @emit("connect", @)
+
+      @ack.requests = 0 #reset ack
 
   send: (data, done) =>
     data = new Buffer(JSON.stringify(data))
@@ -50,7 +68,7 @@ class UDPHoleClient extends EventEmitter
         return console.log("Cannot parse given data #{e}: #{data}")
 
       if data.request not in ["connect", "register", "ack", "bye"]
-        return @emit("data", publicInfo, data)
+        return @emit("data", @getPeer(publicInfo), data)
 
       if data.status isnt 200
         return @emit("fail", data.request, data.status, data.message)
@@ -58,16 +76,23 @@ class UDPHoleClient extends EventEmitter
       # new connection was received, add it to hosts
       if data.request is "connect"
         for connection in data.hosts
-          peer = new Peer(connection)
+          peer = new Peer(connection, @socket)
           @peers.push(peer) # push newly connected connection
 
           peer.initialize()
+
+          peer.on "disconnect", (peer) =>
+            @peers.splice(@peers.indexOf(peer), 1) # remove from peers
+            @emit("disconnect", peer)
+
+          peer.on "connect", (peer) =>
+            @emit("connect", peer)
 
       if data.request is "register" and data.status is 200
         console.log "Registration of service \'#{@service.name}\' successful"
 
       if data.request is "ack"
-        @emit("connect", publicInfo)
+        @getPeer(publicInfo).receive(data)
 
     @socket.on "listening", () =>
       request = {
@@ -86,6 +111,13 @@ class UDPHoleClient extends EventEmitter
     Network.get_private_ip (err, ip) =>
       @privateAddress = ip
       done(err)
+
+  getPeer: (host) =>
+    for peer in @peers
+      if peer.host.private.port is host.port and peer.host.private.address is host.address
+        return peer
+
+    return null
 
   # sends data to the hole service server
   sendToServer: (request, status, data, done) =>

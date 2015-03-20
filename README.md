@@ -42,10 +42,15 @@ client = require("udpp2p").createClient({
 client.on "fail", (request, status, message) ->
   console.log "Request[#{request}] failed with status[#{status}] and message[#{message}]"
 
-client.on "connect", (publicInfo) ->
-  console.log "Client connected #{publicInfo.address}:#{publicInfo.port}"
+client.on "connect", (peer) ->
+  console.log "Peer connected #{peer.host.private.address}:#{peer.host.private.port}"
+  
+  peer.send { ping: true }
+  
+client.on "disconnect", (peer) ->
+  console.log "Peer disconnected #{peer.host.private.address}:#{peer.host.private.port}"
 
-client.on "data", (publicInfo, data) ->
+client.on "data", (peer, data) ->
   console.dir data
 
 client.start()

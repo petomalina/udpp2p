@@ -10,7 +10,13 @@ class Peer extends EventEmitter
       acked: false # not connected
     }
 
-  sendToHost: (data, done) =>
+  initialize: () ->
+    @send({
+      request: "ack"
+      status: 200
+    })
+
+  send: (data, done) =>
     data = new Buffer(JSON.stringify(data))
 
     @socket.send data, 0, data.length, @host.private.port, @host.private.address, (err, bytes) ->
@@ -34,7 +40,7 @@ class UDPHoleClient extends EventEmitter
     @service = options.service
 
     @socket = UDP.createSocket("udp4")
-    @hosts = [] # hosts that are punched
+    @peers = [] # hosts that are punched
 
   initProtocol: (done) =>
     @socket.on "message", (encodedData, publicInfo) =>
@@ -51,13 +57,11 @@ class UDPHoleClient extends EventEmitter
 
       # new connection was received, add it to hosts
       if data.request is "connect"
-        for host in data.hosts # push newly connected host
-          @hosts.push(host)
+        for connection in data.hosts
+          peer = new Peer(connection)
+          @peers.push(peer) # push newly connected connection
 
-          @sendToHost host.private, {
-            request: "ack"
-            status: 200
-          }
+          peer.initialize()
 
       if data.request is "register" and data.status is 200
         console.log "Registration of service \'#{@service.name}\' successful"
@@ -101,8 +105,8 @@ class UDPHoleClient extends EventEmitter
 
   # sends data to all connections
   send: (data, done) =>
-    for host in @hosts
-      @sendToHost(host, data, done)
+    for peer in @peers
+      peer.send(data, done)
 
   start: () =>
     @socket.removeAllListeners() # clear listeners on socket
